@@ -24,7 +24,7 @@ def getStatuses(q, max_tweets, auth):
     #retry_count tells the API to not try again when it fails
     #originally this was unnecessary but after downloading the sample random tweets, something
     #got messed up and after implementng this it fixed itself
-    api = tweepy.API(auth, retry_count=0, wait_on_rate_limit=True)
+    api = tweepy.API(auth, retry_count=0, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
     
     # iterate through Tweepy's cursor function to gather latest tweets 
     # convert each status to an ascii string
