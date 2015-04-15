@@ -16,7 +16,8 @@ import textmining
 import numpy as np
 import re
 import twokenizer
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.decomposition import NMF
 
 common_words = open('google-10000-english.txt', 'r').read().splitlines()
 common_words_set = set(common_words[0:200])
@@ -33,7 +34,7 @@ def processJsonData():
 
     tword_array = []
     # parse each tweet to retrieve status and seperate each word
-    for item in data[0:24000]:
+    for item in data[0:240]:
         status = item.get("text")
         # write the statuses as a string to a .txt doc
         filename = "parsed_sample_tweets.txt"
@@ -46,7 +47,7 @@ def processJsonData():
             just_real_words = [re.sub(r'[^\w\s]','', word) for word 
                                         in no_stopwords_tweet 
                                         if not word.startswith(filter_prefix_set)
-                                        and len(word) >= 4
+                                        
                                     ]
             if just_real_words:
                 tword_array.append(" ".join(just_real_words))
@@ -69,10 +70,12 @@ def docToString(textDoc):
 def create_TDM(tword_array):
     # doc2 = "testdoc2.txt"
     # Initialize class to create term-document matrix
-    tdm = textmining.TermDocumentMatrix()
-    # Add the documents, documents must come as strings
-    for tweet in tword_array:
-        tdm.add_doc(tweet)
+    # 
+    # tdm = textmining.TermDocumentMatrix()
+    # # Add the documents, documents must come as strings
+    # 
+    # for tweet in tword_array:
+    #     tdm.add_doc(tweet)
         
     # Rows returns a generator. Note that setting cutoff=1 means
     # that words which appear in 1 or more documents will be included in
@@ -80,15 +83,21 @@ def create_TDM(tword_array):
     # for cutoff is 2, since we usually aren't interested in words which
     # appear in a single document. For this example we want to see all
     # words however, hence cutoff=1.
-    matrixGenerator = tdm.rows(cutoff=1)
-    matrix_vocab = matrixGenerator.next()
-    matrix_array = []
-    # matrix_topics = ["girl", "random"]
-    for row in matrixGenerator:
-        matrix_array.append(row)
+    # 
+    # 
+    # matrixGenerator = tdm.rows(cutoff=1)
+    # matrix_vocab = matrixGenerator.next()
+    # matrix_array = []
+    # # matrix_topics = ["girl", "random"]
+    # for row in matrixGenerator:
+    #     matrix_array.append(row)
 
-    matrix = np.array(matrix_array)
-
+    count_vectorizer = CountVectorizer()
+    # vectorizer = TfidfVectorizer(max_df = 1.0, min_df = 1)
+    matrix = count_vectorizer.fit_transform(tword_array)
+    # matrix = np.array(matrix_array)
+    print matrix
+    print type(matrix)
     print matrix.shape
    
     # Instead of writing out the matrix you can also access its rows directly.
@@ -96,9 +105,14 @@ def create_TDM(tword_array):
     # for row in tdm.rows(cutoff=1):
     #     print row
     # print tdm
+    # 
+    # SERENA:::: 
+    # vectorizer = CountVectorizer
+    # matrix = cvectorizer.fit_transform(pass it a list of lists of my docs/vocab).toArray()
 
     model = lda.LDA(n_topics=40, n_iter=500, random_state=1)
-    model.fit(matrix)
+    model.fit_transform(matrix)
+    print "model fit"
     topic_word = model.topic_word_  # model.components_ also works
     n_top_words = 8
     for i, topic_dist in enumerate(topic_word):
