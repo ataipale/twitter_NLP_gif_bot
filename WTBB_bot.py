@@ -19,6 +19,9 @@ import twokenizer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.decomposition import NMF
 import langdetect 
+import logging
+
+logging.basicConfig(level = logging.DEBUG)
 
 # common_words = open('google-10000-english.txt', 'r').read().splitlines()
 # common_words_set = set(common_words[0:75])
@@ -59,11 +62,12 @@ def processJsonData(JSON_array):
                     if just_real_words:
                         tword_array.append(" ".join(just_real_words))
 
+
     count_vectorizer = CountVectorizer(min_df = 2, stop_words = 'english')
     matrix = count_vectorizer.fit_transform(tword_array)
     feature_names = np.array(count_vectorizer.get_feature_names())
-    print feature_names
-    print matrix.shape
+    # print feature_names
+    # print matrix.shape
 
 
     return (matrix, feature_names)
@@ -73,8 +77,9 @@ def processJsonData(JSON_array):
 # create Term Document Matrix for LDA analysis
 def create_TDM(matrix, feature_names):
 
+    
     # print matrix
-    print type(matrix)
+    print type(matrix[10:])
     print matrix.shape
    
     model = lda.LDA(n_topics=40, n_iter=50, random_state=1)
@@ -86,12 +91,15 @@ def create_TDM(matrix, feature_names):
         topic_words = (feature_names)[np.argsort(topic_dist)][:-n_top_words:-1]
         print('Topic {}: {}'.format(i, ' '.join(topic_words)))
 
-    # for n in range(10):
-    # topic_most_pr = doc_topic[n].argmax()
-    # print("doc: {} topic: {}\n{}...".format(n,
-    #                                         topic_most_pr,
-    #                                         titles[n][:50]))
-    return model
+    # print matrix[:10]
+    found_doc = model.transform(matrix.getrow(1))    
+    # found_doc = model.transform(matrix[:10])
+    print found_doc
+    print "transformed!!"
+    for title, topics in enumerate(found_doc):
+        print("{} (top topic: {})".format(title, topics.argmax()))
+
+    # return model
 
 def matchNewTweet(model, testing_data):
 
@@ -138,10 +146,10 @@ def main():
 
     processed_data, feature_names = processJsonData(data[:1000])  
     print processed_data.shape
-    print processed_data[:testing_size]
-    print feature_names
-    model = create_TDM(processed_data[testing_size:], feature_names)
-    matchNewTweet(model, processed_data[:testing_size])  
+    # print processed_data[:testing_size]
+    # print feature_names
+    create_TDM(processed_data, feature_names)
+    # matchNewTweet(model, processed_data[:testing_size])  
     
     # processJsonData()
 
