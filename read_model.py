@@ -66,37 +66,37 @@ def processJsonData(JSON_array):
 
     return (matrix, feature_names, tweets)
 
-def log(str):
-    print "\n@@@@@@@@@@@\n"
-    print 
-    print "\n@@@@@@@@@@@\n"
-
 # note: best to interact with user in main function then pass these variable to f(n)
 def main():
 
+    '''
+    Read in $LIMIT tweets, and transform them against model that was saved to file
+    '''
+
+    limit = 200
+
     # convert json into array of statuses
     data = []
+    n = 0
     with open('sample_tweets2.json') as data_file:
         for line in data_file:
             data.append(json.loads(line))
+            n += 1
+            if n == limit:
+                break
 
-    testing_size = 20
+    # Read Model from File
+    model = pickle.load( open( "awesome.model", "rb" ) )
 
-    processed_data, feature_names, tword_array = processJsonData(data[:1000])  
-
+    # Prepare Data for Transformation
+    processed_data, feature_names, tword_array = processJsonData(data)  
     npmatrix = np.array(processed_data.toarray())
 
-    model = pickle.load( open( "awesome.model", "rb" ) )
-    model.transform(npmatrix[:testing_size])
+    # Transform Data against Model
+    doc_topic_test = model.transform(npmatrix)
 
-    doc_topic_test = model.transform(npmatrix[:testing_size])
-
-    # print doc_topic_test
-
-    for title, topics in zip(tword_array[:10], doc_topic_test):
+    for title, topics in zip(tword_array, doc_topic_test):
         print("{} (top topic: {})".format(title, topics.argmax()))
-
-    sys.exit(1)
 
 #standard boilerplate that calls the main() function
 if __name__ == '__main__':
