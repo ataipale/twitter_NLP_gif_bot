@@ -10,14 +10,12 @@ import lda
 import operator
 import pudb
 import json
-import textmining 
 import numpy as np
 import re
 import twokenizer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.decomposition import NMF
 import langdetect 
-
 import pickle
 
 filter_prefix_set = ('@', 'http', 'rt', 'www')
@@ -88,6 +86,9 @@ def main():
     # Read Model from File
     model = pickle.load( open( "awesome.model", "rb" ) )
 
+    # read topic words
+    topic_words = pickle.load( open("awesome.topic_words_array", 'rb'))
+
     # Prepare Data for Transformation
     processed_data, feature_names, tword_array = processJsonData(data)  
     npmatrix = np.array(processed_data.toarray())
@@ -95,8 +96,21 @@ def main():
     # Transform Data against Model
     doc_topic_test = model.transform(npmatrix)
 
-    for title, topics in zip(tword_array, doc_topic_test):
-        print("{} (top topic: {})".format(title, topics.argmax()))
+    n_top_words = 8
+
+    print doc_topic_test
+    print topic_words[1]
+    print type(topic_words)
+    for topic in topic_words:
+        # print topic
+        print type(topic)
+
+        # print np.array(feature_names)[np.argsort(topic)][:-n_top_words:-1]
+
+
+    for title, topic_number in zip(tword_array, doc_topic_test):
+        print type(doc_topic_test)
+        print("(TOPIC {}:: {} ::) {} ".format(topic_number.argmax(), topic_words[topic_number.argmax()], title) )
 
 #standard boilerplate that calls the main() function
 if __name__ == '__main__':

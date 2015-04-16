@@ -10,7 +10,6 @@ import lda
 import operator
 import pudb
 import json
-import textmining 
 import numpy as np
 import re
 import twokenizer
@@ -86,27 +85,29 @@ def main():
 
     print "before data"
 
-    # training_matrix, feature_names = processJsonData(data[testing_size:1000])
-    # model = create_TDM(training_matrix, feature_names)
-
-    # testing_data, feature_names_2 = processJsonData(data[:testing_size])
-    # matchNewTweet(model, testing_data, feature_names_2)  
-
-    # print len(data)
-    # sys.exit(1)
-
     processed_data, feature_names, tword_array = processJsonData(data[testing_size:1000])  
-
-    print "\n@@@@@@@@@@@\n"
-    print type(processed_data)
-    print "\n@@@@@@@@@@@\n"
 
     npmatrix = np.array(processed_data.toarray())
 
-    print type(npmatrix)
+    # print type(npmatrix)
 
     model = lda.LDA(n_topics=40, n_iter=50, random_state=1)
     model.fit(npmatrix[testing_size:])
+
+    topic_word = model.components_  # model.components_ also works
+    n_top_words = 8
+    topic_words_array = {}
+    for i, topic_dist in enumerate(topic_word):
+        topic_words = np.array(feature_names)[np.argsort(topic_dist)][:-n_top_words:-1]
+        topic_list = []
+        for topic in topic_words:
+            topic_list.append(topic)
+        topic_words_array[i] = topic_list
+        print('Topic {}: {}'.format(i, ' '.join(topic_words)))
+
+    pickle.dump( topic_words_array , open("awesome.topic_words_array", "w"))
+
+    log(topic_words_array)
 
     pickle.dump( model , open( "awesome.model", "wb" ) )
 
