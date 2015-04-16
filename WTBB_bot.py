@@ -18,105 +18,72 @@ import re
 import twokenizer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.decomposition import NMF
+import langdetect 
 
-common_words = open('google-10000-english.txt', 'r').read().splitlines()
-common_words_set = set(common_words[0:200])
+# common_words = open('google-10000-english.txt', 'r').read().splitlines()
+# common_words_set = set(common_words[0:75])
+# print common_words_set
+# q = raw_input("Continue?? ").lower()
 
 filter_prefix_set = ('@', 'http', 'rt', 'www')
 
-def processJsonData():
-
-    # convert json into array of statuses
-    data = []
-    with open('sample_tweets2.json') as data_file:
-        for line in data_file:
-            data.append(json.loads(line))
+def processJsonData(JSON_array):
 
     tword_array = []
     # parse each tweet to retrieve status and seperate each word
-    for item in data[0:240]:
+    for item in JSON_array:
+        # take only status for JSON file
         status = item.get("text")
-        # write the statuses as a string to a .txt doc
-        filename = "parsed_sample_tweets.txt"
-        randomTweetObject = open(filename, 'w')
         if status:
+            # ignore non-ascii characters, make all lowercase letters
             tweet_split = status.encode('ascii', 'ignore').lower()
-            tokenized = twokenizer.tokenize(tweet_split)
-            # print tokenized
-            no_stopwords_tweet = [word for word in tokenized if word not in common_words_set]
-            just_real_words = [re.sub(r'[^\w\s]','', word) for word 
-                                        in no_stopwords_tweet 
-                                        if not word.startswith(filter_prefix_set)
-                                        
-                                    ]
-            if just_real_words:
-                tword_array.append(" ".join(just_real_words))
-    print len(tword_array)
-    return tword_array
+            # get rid of useless characters in tweets, and makes words from string
+            if tweet_split:
+                # ignore non-English tweets
+                # print tweet_split
+                try:
+                    lang = langdetect.detect(tweet_split)
+                except langdetect.lang_detect_exception.LangDetectException:
+                    continue
+                if  lang == 'en':
+                    # print "entered loop!"
+                    tokenized = twokenizer.tokenize(tweet_split)
+                    # get rid of stopwords
+                    # no_stopwords_tweet = [word for word in tokenized if word not in common_words_set]
+                    # get rid of punctuation and internet terms
+                    just_real_words = [re.sub(r'[^\w\s]','', word) for word 
+                                                in tokenized 
+                                                if not word.startswith(filter_prefix_set)
+                                                
+                                            ]
+                    if just_real_words:
+                        tword_array.append(" ".join(just_real_words))
+
+    count_vectorizer = CountVectorizer(min_df = 2, stop_words = 'english')
+    matrix = count_vectorizer.fit_transform(tword_array)
+    feature_names = np.array(count_vectorizer.get_feature_names())
+    print feature_names
+    print matrix.shape
+
+
+    return (matrix, feature_names)
 
     # print tword_array[0:200]
-
-# Term Document Matrix maker only takes strings, so converting doc to string
-def docToString(textDoc):
-    docString = ''
-    with open(textDoc) as txt_file:
-        for line in txt_file:
-            if line:
-                line.encode('ascii', 'ignore')
-                docString = docString + line
-    return docString
             
 # create Term Document Matrix for LDA analysis
-def create_TDM(tword_array):
-    # doc2 = "testdoc2.txt"
-    # Initialize class to create term-document matrix
-    # 
-    # tdm = textmining.TermDocumentMatrix()
-    # # Add the documents, documents must come as strings
-    # 
-    # for tweet in tword_array:
-    #     tdm.add_doc(tweet)
-        
-    # Rows returns a generator. Note that setting cutoff=1 means
-    # that words which appear in 1 or more documents will be included in
-    # the output (i.e. every word will appear in the output). The default
-    # for cutoff is 2, since we usually aren't interested in words which
-    # appear in a single document. For this example we want to see all
-    # words however, hence cutoff=1.
-    # 
-    # 
-    # matrixGenerator = tdm.rows(cutoff=1)
-    # matrix_vocab = matrixGenerator.next()
-    # matrix_array = []
-    # # matrix_topics = ["girl", "random"]
-    # for row in matrixGenerator:
-    #     matrix_array.append(row)
+def create_TDM(matrix, feature_names):
 
-    count_vectorizer = CountVectorizer()
-    # vectorizer = TfidfVectorizer(max_df = 1.0, min_df = 1)
-    matrix = count_vectorizer.fit_transform(tword_array)
-    # matrix = np.array(matrix_array)
-    print matrix
+    # print matrix
     print type(matrix)
     print matrix.shape
    
-    # Instead of writing out the matrix you can also access its rows directly.
-    # Let's print them to the screen.
-    # for row in tdm.rows(cutoff=1):
-    #     print row
-    # print tdm
-    # 
-    # SERENA:::: 
-    # vectorizer = CountVectorizer
-    # matrix = cvectorizer.fit_transform(pass it a list of lists of my docs/vocab).toArray()
-
-    model = lda.LDA(n_topics=40, n_iter=500, random_state=1)
-    model.fit_transform(matrix)
+    model = lda.LDA(n_topics=40, n_iter=50, random_state=1)
+    model.fit(matrix)
     print "model fit"
     topic_word = model.topic_word_  # model.components_ also works
     n_top_words = 8
     for i, topic_dist in enumerate(topic_word):
-        topic_words = np.array(matrix_vocab)[np.argsort(topic_dist)][:-n_top_words:-1]
+        topic_words = (feature_names)[np.argsort(topic_dist)][:-n_top_words:-1]
         print('Topic {}: {}'.format(i, ' '.join(topic_words)))
 
     # for n in range(10):
@@ -124,6 +91,16 @@ def create_TDM(tword_array):
     # print("doc: {} topic: {}\n{}...".format(n,
     #                                         topic_most_pr,
     #                                         titles[n][:50]))
+    return model
+
+def matchNewTweet(model, testing_data):
+
+    found_doc = model.transform(testing_data)
+    print "found_doc_shape:" + found_doc.shape
+    print "transformed!!"
+    for title, topics in enumerate(found_doc):
+        print "entered loop!"
+        print("{} (top topic: {})".format(title, topics.argmax()))
 
 
 # write about rate limit data
@@ -144,12 +121,28 @@ def main():
 
     auth = OAuthHandler(ckey, ctoken)
     auth.set_access_token(atoken, asecret)
+
+    # convert json into array of statuses
+    data = []
+    with open('sample_tweets2.json') as data_file:
+        for line in data_file:
+            data.append(json.loads(line))
+
+    testing_size = 20
+
+    # training_matrix, feature_names = processJsonData(data[testing_size:1000])
+    # model = create_TDM(training_matrix, feature_names)
+
+    # testing_data, feature_names_2 = processJsonData(data[:testing_size])
+    # matchNewTweet(model, testing_data, feature_names_2)  
+
+    processed_data, feature_names = processJsonData(data[:1000])  
+    print processed_data.shape
+    print processed_data[:testing_size]
+    print feature_names
+    model = create_TDM(processed_data[testing_size:], feature_names)
+    matchNewTweet(model, processed_data[:testing_size])  
     
-    # q = raw_input("What word would you like to search twitter for? ").lower()
-    # max_tweets = int(raw_input("How many tweets would you like to search? ").lower())
-    
-    create_TDM(processJsonData())
-    # getStatuses(q, max_tweets, auth)
     # processJsonData()
 
 #standard boilerplate that calls the main() function
