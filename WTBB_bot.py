@@ -30,6 +30,7 @@ filter_prefix_set = ('@', 'http', 'rt', 'www')
 def processJsonData(JSON_array):
 
     tword_array = []
+    tweets = []
     # parse each tweet to retrieve status and seperate each word
     for item in JSON_array:
         # take only status for JSON file
@@ -58,17 +59,17 @@ def processJsonData(JSON_array):
                                             ]
                     if just_real_words:
                         tword_array.append(" ".join(just_real_words))
+                        tweets.append(tweet_split)
 
     count_vectorizer = CountVectorizer(min_df = 2, stop_words = 'english')
     matrix = count_vectorizer.fit_transform(tword_array)
+    print matrix[:10]
+
     feature_names = np.array(count_vectorizer.get_feature_names())
     print feature_names
-    print matrix.shape
+    # print matrix.shape
 
-
-    return (matrix, feature_names)
-
-    # print tword_array[0:200]
+    return (matrix, feature_names, tweets)
             
 # create Term Document Matrix for LDA analysis
 def create_TDM(matrix, feature_names):
@@ -136,12 +137,41 @@ def main():
     # testing_data, feature_names_2 = processJsonData(data[:testing_size])
     # matchNewTweet(model, testing_data, feature_names_2)  
 
-    processed_data, feature_names = processJsonData(data[:1000])  
+    processed_data, feature_names, tword_array = processJsonData(data[:1000])  
+
+    print "\n@@@@@@@@@@@\n"
+    print type(processed_data)
+    print "\n@@@@@@@@@@@\n"
+
+    npmatrix = np.array(processed_data.toarray())
+
+    print type(npmatrix)
+
+    model = lda.LDA(n_topics=40, n_iter=50, random_state=1)
+    model.fit(npmatrix[testing_size:])
+
+    # print topics
+    topic_word = model.topic_word_  # model.components_ also works
+    n_top_words = 8
+    for i, topic_dist in enumerate(topic_word):
+        topic_words = (feature_names)[np.argsort(topic_dist)][:-n_top_words:-1]
+        print('Topic {}: {}'.format(i, ' '.join(topic_words)))
+
+
+    doc_topic_test = model.transform(npmatrix[:testing_size])
+
+    # print doc_topic_test
+
+    for title, topics in zip(tword_array[:10], doc_topic_test):
+        print("{} (top topic: {})".format(title, topics.argmax()))
+
+    sys.exit(1)
+
     print processed_data.shape
     print processed_data[:testing_size]
     print feature_names
-    model = create_TDM(processed_data[testing_size:], feature_names)
-    matchNewTweet(model, processed_data[:testing_size])  
+    # model = create_TDM(processed_data[testing_size:], feature_names)
+    # matchNewTweet(model, processed_data[:testing_size])  
     
     # processJsonData()
 
