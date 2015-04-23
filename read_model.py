@@ -1,14 +1,4 @@
-
-from tweepy import Stream
-from tweepy import OAuthHandler
-from tweepy.streaming import StreamListener
-from tweepy import Cursor
-import sys
-import os
-import tweepy
 import lda
-import operator
-import pudb
 import json
 import numpy as np
 import re
@@ -20,9 +10,13 @@ import pickle
 
 filter_prefix_set = ('@', 'http', 'rt', 'www')
 
-# process and clean the tweets and return a TDM of tweets/vocab and 
-# vocab(feature_names)
 def processTweets(tweets):
+
+    '''
+    Process and clean the tweets and return a TDM of tweets/vocab and 
+    vocab(feature_names)
+    '''
+
     tword_array = []
     clean_tweets = []
     for status in tweets:
@@ -75,18 +69,33 @@ def transform_tweet(tweet):
     return transform_tweets([tweet])
 
 def transform_tweets(tweets):
+
+    '''
+    Transforms Incoming tweet data and returns the tweet and topic
+    '''
     # Read Model from File
-    model = pickle.load( open( "awesome.model", "rb" ) )
+    model = pickle.load( open( "awesome.object", "rb" ))
 
     # Prepare Data for Transformation
-    processed_data, feature_names, tweets = processTweets(tweets)  
-    npmatrix = np.array(processed_data.toarray())
+    processed_data_TDM, feature_names_newtweet, new_tweets = processJsonData(tweets)  
+    npmatrix = np.array(processed_data_TDM.toarray())
+
+    # Get Parts of Object Dictionary
+    model = model_object.get('model')
+    feature_names_model = model_object.get('feature_names')
+    topic_dict = model_object.get('topic_dict')
+
+    # topic_words is a matrix of point estimate of topic distribution per document 
+    topic_words = model.components_
 
     # Transform Data against Model
-    doc_topic_test = model.transform(npmatrix)
+    doc_topic = model.transform(npmatrix)
 
-    for title, topics in zip(tweets, doc_topic_test):
-        print("{} (top topic: {})".format(title, topics.argmax()))
+    tweet_and_topic = []
+    for title, topic_dist in zip(tweets, doc_topic):
+        tweet_and_topic.append(topic_dict[topic_dist.argmax()], title) 
+
+    return tweet_and_topic
 
 # note: best to interact with user in main function then pass these variable to f(n)
 def main():
@@ -112,17 +121,13 @@ def main():
     model_object = pickle.load(open( "awesome.object", "rb" ))
     print "[END] Reading Object"
 
-    # topic_words is a matrix of point estimate of word distribution per topic. 
-    # Shape = [n_topics, n_features]
     model = model_object.get('model')
-    topic_words = model.components_
     feature_names_model = model_object.get('feature_names')
     topic_dict = model_object.get('topic_dict')
 
-    # print "[BEGIN] Reading Feature Names"
-    # feature_names_model = pickle.load( open("awesome.feature_names", "rb"))
-    # print feature_names_model
-    # print "[END] Reading Feature Names"
+    # topic_words is a matrix of point estimate of word distribution per topic. 
+        # Shape = [n_topics, n_features]
+    topic_words = model.components_
 
     # Prepare Data for Transformation
     print "[BEGIN] Processing Data"
@@ -134,40 +139,11 @@ def main():
     # Returns:
         # doc_topic : array-like, shape (n_samples, n_topics)
         # Point estimate of the document-topic distributions
-        
-    # Below:
-    # gives us an array of possible topics, 
-    # take argmax to get the topic that matches the doc
-    # doc_topic = model.doc_topic_
-    # do we actually want the below at all??????? No...
     doc_topic = model.transform(npmatrix)
 
-    n_top_words = 8
-    # for topic in topic_words:
-    #     # print topic
-    #     # print type(topic)
-    #     print np.array(feature_names_model)[np.argsort(topic)][:-n_top_words:-1]
-
     for title, topic_dist in zip(tweets, doc_topic):
-        # topic_words = np.array(feature_names_model)[np.argsort(topic_dist)][:-n_top_words:-1]
         print("(TOPIC {} ::) {} ".format(' '.join(topic_dict[topic_dist.argmax()]), title) )
 
-    # print doc_topic_test
-    # print topic_words[1]
-    # print type(topic_words)
-    # for topic in topic_words:
-    #     # print topic
-    #     print type(topic)
-
-    #     # print np.array(feature_names)[np.argsort(topic)][:-n_top_words:-1]
-
-    # for title, topic_number in zip(tweets, doc_topic_test):
-    #     print type(doc_topic_test)
-    #     print("(TOPIC {}:: {} ::) {} ".format(topic_number.argmax(), topic_words[topic_number.argmax()], title) )
-
-    print len(doc_topic_test)
-
-#standard boilerplate that calls the main() function
 if __name__ == '__main__':
     main()
 
