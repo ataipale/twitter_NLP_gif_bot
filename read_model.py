@@ -110,6 +110,8 @@ def main():
 
     # read topic words
     topic_words = pickle.load( open("awesome.topic_words_array", 'rb'))
+    print type(topic_words[1])
+
 
     # Prepare Data for Transformation
     processed_data, feature_names, tword_array = processJsonData(data)  
@@ -119,16 +121,6 @@ def main():
     doc_topic_test = model.transform(npmatrix)
 
     n_top_words = 8
-
-    print doc_topic_test
-    print topic_words[1]
-    print type(topic_words)
-    for topic in topic_words:
-        # print topic
-        print type(topic)
-
-        # print np.array(feature_names)[np.argsort(topic)][:-n_top_words:-1]
-
 
     for title, topic_number in zip(tword_array, doc_topic_test):
         print type(doc_topic_test)
