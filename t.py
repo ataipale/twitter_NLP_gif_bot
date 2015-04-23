@@ -75,11 +75,10 @@ def onMentions(since_id):
 
         user = mention.user.screen_name
         
-
-        
         text = mention.text
-    #     topic = model.transform(text)
-    #     img_url = giphyApi(topic.text, GIPHY_API_KEY)
+        topic = read_model.transform_tweet(text)
+        img_url = giphyApi(topic, GIPHY_API_KEY)
+
     #
     #     msg = '@' + user + ' ' + img_url
 

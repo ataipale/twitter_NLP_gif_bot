@@ -80,15 +80,9 @@ def main():
         for line in data_file:
             data.append(json.loads(line))
 
-    # for cutting off beginning portion of data for testing purposes
-    testing_size = 20
-
-    # to avoid looking at the entire data set when testing
-    test_max = 1000
-
-    print "before data"
-
-    processed_data_TDM, feature_names = processJsonData(data[testing_size:test_max])  
+    print "[BEGIN] Processing"
+    processed_data_TDM, feature_names = processJsonData(data)  
+    print "[END] Processing"
 
     npmatrix = np.array(processed_data_TDM.toarray())
 

@@ -95,7 +95,7 @@ def main():
     Read in $LIMIT tweets, and transform them against model that was saved to file
     '''
 
-    limit = 20
+    limit = 2000
 
     # convert json into array of statuses
     data = []
@@ -151,6 +151,21 @@ def main():
     for title, topic_dist in zip(tweets, doc_topic):
         # topic_words = np.array(feature_names_model)[np.argsort(topic_dist)][:-n_top_words:-1]
         print("(TOPIC {} ::) {} ".format(' '.join(topic_dict[topic_dist.argmax()]), title) )
+
+    # print doc_topic_test
+    # print topic_words[1]
+    # print type(topic_words)
+    # for topic in topic_words:
+    #     # print topic
+    #     print type(topic)
+
+    #     # print np.array(feature_names)[np.argsort(topic)][:-n_top_words:-1]
+
+    # for title, topic_number in zip(tweets, doc_topic_test):
+    #     print type(doc_topic_test)
+    #     print("(TOPIC {}:: {} ::) {} ".format(topic_number.argmax(), topic_words[topic_number.argmax()], title) )
+
+    print len(doc_topic_test)
 
 #standard boilerplate that calls the main() function
 if __name__ == '__main__':
