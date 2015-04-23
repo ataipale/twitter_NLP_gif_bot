@@ -21,6 +21,11 @@ GIPHY_API_KEY = 'dc6zaTOxFJmzC'
 
 '''
 
+Run
+===
+
+$ source config.sh && python t.py
+
 Steps
 =====
 
@@ -34,6 +39,7 @@ Steps
 '''
  
 #enter the corresponding information from your Twitter application:
+GIPHY_API_KEY   = os.environ.get('GIPHY_API_KEY')
 CONSUMER_KEY    = os.environ.get('CONSUMER_KEY')
 CONSUMER_SECRET = os.environ.get('CONSUMER_SECRET')
 ACCESS_KEY      = os.environ.get('ACCESS_KEY')
