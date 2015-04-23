@@ -24,8 +24,6 @@ filter_prefix_set = ('@', 'http', 'rt', 'www')
 def processJsonData(JSON_array):
 
     tword_array = []
-    # xxx wait.... why are we making tweets?
-    tweets = []
     # parse each tweet to retrieve status and seperate each word
     for item in JSON_array:
         # take only status for JSON file
@@ -52,7 +50,6 @@ def processJsonData(JSON_array):
                                             ]
                     if just_real_words:
                         tword_array.append(" ".join(just_real_words))
-                        tweets.append(tweet_split)
 
     # use Sklearn's kit to fit and transform the array of just real words from the 
     # tweets and make TDM
@@ -64,7 +61,7 @@ def processJsonData(JSON_array):
     print feature_names
     # print matrix.shape
 
-    return (TDM, feature_names, tweets)
+    return (TDM, feature_names)
 
 def log(str):
     print "\n@@@@@@@@@@@\n"
@@ -90,7 +87,7 @@ def main():
 
     print "before data"
 
-    processed_data_TDM, feature_names, tweets = processJsonData(data[testing_size:test_max])  
+    processed_data_TDM, feature_names = processJsonData(data[testing_size:test_max])  
 
     npmatrix = np.array(processed_data_TDM.toarray())
 
@@ -101,15 +98,11 @@ def main():
     # Shape = [n_topics, n_features]
     topic_word = model.components_  
     n_top_words = 8
-    # topic_words_array = []
     for i, word_dist in enumerate(topic_word):
         print "Here are feature_names:"
-        # print type([np.argsort(word_dist)])
-        # print np.array(feature_names)
-        # Below: For each feature, sort the word distribution and give me 
-        # the 8 last words (largest word dist??)
+        # Below: For each feature, sort the vocab based on word distribution 
+        # and give me the 8 most relatively important words in each doc
         topic_words = np.array(feature_names)[np.argsort(word_dist)][:-n_top_words:-1]
-        # topic_words_array[i] = topic_list
         print('Topic {}: {}'.format(i, ' '.join(topic_words)))
 
     pickle.dump( model , open( "awesome.model", "wb" ) )
