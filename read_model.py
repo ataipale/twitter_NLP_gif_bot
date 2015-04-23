@@ -21,7 +21,12 @@ import pickle
 filter_prefix_set = ('@', 'http', 'rt', 'www')
 
 def processTweets(tweets):
+    tword_array = []
+    clean_tweets = []
+    x = 0
     for status in tweets:
+        x = x + 1
+        print x
         tweet_split = status.encode('ascii', 'ignore').lower()
         # get rid of useless characters in tweets, and makes words from string
         if tweet_split:
@@ -44,21 +49,21 @@ def processTweets(tweets):
                                         ]
                 if just_real_words:
                     tword_array.append(" ".join(just_real_words))
-                    tweets.append(tweet_split)
+                    clean_tweets.append(tweet_split)
 
+    print "[BEGIN] Count Vectorizing"
     count_vectorizer = CountVectorizer(min_df = 2, stop_words = 'english')
     matrix = count_vectorizer.fit_transform(tword_array)
-    print matrix[:10]
+    print "[END] Count Vectorizing"
+    # print matrix[:10]
 
     feature_names = np.array(count_vectorizer.get_feature_names())
     print feature_names
     # print matrix.shape
 
-    return (matrix, feature_names, tweets)
+    return (matrix, feature_names, clean_tweets)
 
 def processJsonData(JSON_array):
-
-    tword_array = []
     tweets = []
     # parse each tweet to retrieve status and seperate each word
     for item in JSON_array:
@@ -77,13 +82,13 @@ def transform_tweets(tweets):
     model = pickle.load( open( "awesome.model", "rb" ) )
 
     # Prepare Data for Transformation
-    processed_data, feature_names, tword_array = processTweets(tweets)  
+    processed_data, feature_names, tweets = processTweets(tweets)  
     npmatrix = np.array(processed_data.toarray())
 
     # Transform Data against Model
     doc_topic_test = model.transform(npmatrix)
 
-    for title, topics in zip(tword_array, doc_topic_test):
+    for title, topics in zip(tweets, doc_topic_test):
         print("{} (top topic: {})".format(title, topics.argmax()))
 
 # note: best to interact with user in main function then pass these variable to f(n)
@@ -103,26 +108,38 @@ def main():
             data.append(json.loads(line))
             n += 1
             if n == limit:
+                print n
                 break
 
     # Read Model from File
+    print "[BEGIN] Reading Model"
     model = pickle.load( open( "awesome.model", "rb" ) )
+    print "[END] Reading Model"
 
-    # read topic words
-    topic_words = pickle.load( open("awesome.topic_words_array", 'rb'))
-    print type(topic_words[1])
-
+    topic_words = model.components_
 
     # Prepare Data for Transformation
-    processed_data, feature_names, tword_array = processJsonData(data)  
+    print "[BEGIN] Processing Data"
+    processed_data, feature_names, tweets = processJsonData(data)  
     npmatrix = np.array(processed_data.toarray())
+    print "[END] Processing Data"
 
     # Transform Data against Model
     doc_topic_test = model.transform(npmatrix)
 
     n_top_words = 8
 
-    for title, topic_number in zip(tword_array, doc_topic_test):
+    print doc_topic_test
+    print topic_words[1]
+    print type(topic_words)
+    for topic in topic_words:
+        # print topic
+        print type(topic)
+
+        # print np.array(feature_names)[np.argsort(topic)][:-n_top_words:-1]
+
+
+    for title, topic_number in zip(tweets, doc_topic_test):
         print type(doc_topic_test)
         print("(TOPIC {}:: {} ::) {} ".format(topic_number.argmax(), topic_words[topic_number.argmax()], title) )
 
