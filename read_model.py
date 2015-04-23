@@ -138,9 +138,9 @@ def main():
     # Below:
     # gives us an array of possible topics, 
     # take argmax to get the topic that matches the doc
-    doc_topic = model.doc_topic_
+    # doc_topic = model.doc_topic_
     # do we actually want the below at all??????? No...
-    # doc_topic_test = model.transform(npmatrix)
+    doc_topic = model.transform(npmatrix)
 
     n_top_words = 8
     # for topic in topic_words:
@@ -149,7 +149,7 @@ def main():
     #     print np.array(feature_names_model)[np.argsort(topic)][:-n_top_words:-1]
 
     for title, topic_dist in zip(tweets, doc_topic):
-        topic_words = np.array(feature_names_model)[np.argsort(topic_dist)][:-n_top_words:-1]
+        # topic_words = np.array(feature_names_model)[np.argsort(topic_dist)][:-n_top_words:-1]
         print("(TOPIC {} ::) {} ".format(' '.join(topic_dict[topic_dist.argmax()]), title) )
 
 #standard boilerplate that calls the main() function
