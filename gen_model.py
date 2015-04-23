@@ -21,6 +21,7 @@ import pickle
 
 filter_prefix_set = ('@', 'http', 'rt', 'www')
 
+# process and clean the tweets and return a TDM of tweets/vocab and vocab(feature_names)
 def processJsonData(JSON_array):
 
     tword_array = []
@@ -98,16 +99,23 @@ def main():
     # Shape = [n_topics, n_features]
     topic_word = model.components_  
     n_top_words = 8
+    topic_dict = []
     for i, word_dist in enumerate(topic_word):
         print "Here are feature_names:"
         # Below: For each feature, sort the vocab based on word distribution 
         # and give me the 8 most relatively important words in each doc
         topic_words = np.array(feature_names)[np.argsort(word_dist)][:-n_top_words:-1]
+        topic_dict.append(topic_words) 
         print('Topic {}: {}'.format(i, ' '.join(topic_words)))
 
-    pickle.dump( model , open( "awesome.model", "wb" ) )
+    pickle_dict = dict(model = model, feature_names = feature_names, topic_dict = topic_dict)
+    pickle.dump( pickle_dict, open("awesome.object", "wb"))
 
-    log(model.components_)
+    # log(model.components_)
+
+    # pickle.dump( feature_names, open("awesome.feature_names", "wb") )
+
+    # log(model.components_)
 
 #standard boilerplate that calls the main() function
 if __name__ == '__main__':

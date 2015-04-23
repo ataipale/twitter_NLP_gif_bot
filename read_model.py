@@ -20,13 +20,12 @@ import pickle
 
 filter_prefix_set = ('@', 'http', 'rt', 'www')
 
+# process and clean the tweets and return a TDM of tweets/vocab and 
+# vocab(feature_names)
 def processTweets(tweets):
     tword_array = []
     clean_tweets = []
-    x = 0
     for status in tweets:
-        x = x + 1
-        print x
         tweet_split = status.encode('ascii', 'ignore').lower()
         # get rid of useless characters in tweets, and makes words from string
         if tweet_split:
@@ -55,11 +54,9 @@ def processTweets(tweets):
     count_vectorizer = CountVectorizer(min_df = 2, stop_words = 'english')
     matrix = count_vectorizer.fit_transform(tword_array)
     print "[END] Count Vectorizing"
-    # print matrix[:10]
 
     feature_names = np.array(count_vectorizer.get_feature_names())
     print feature_names
-    # print matrix.shape
 
     return (matrix, feature_names, clean_tweets)
 
@@ -98,7 +95,7 @@ def main():
     Read in $LIMIT tweets, and transform them against model that was saved to file
     '''
 
-    limit = 200
+    limit = 20
 
     # convert json into array of statuses
     data = []
@@ -108,40 +105,52 @@ def main():
             data.append(json.loads(line))
             n += 1
             if n == limit:
-                print n
                 break
 
     # Read Model from File
-    print "[BEGIN] Reading Model"
-    model = pickle.load( open( "awesome.model", "rb" ) )
-    print "[END] Reading Model"
+    print "[BEGIN] Reading Onject"
+    model_object = pickle.load(open( "awesome.object", "rb" ))
+    print "[END] Reading Object"
 
+    # topic_words is a matrix of point estimate of word distribution per topic. 
+    # Shape = [n_topics, n_features]
+    model = model_object.get('model')
     topic_words = model.components_
+    feature_names_model = model_object.get('feature_names')
+    topic_dict = model_object.get('topic_dict')
+
+    # print "[BEGIN] Reading Feature Names"
+    # feature_names_model = pickle.load( open("awesome.feature_names", "rb"))
+    # print feature_names_model
+    # print "[END] Reading Feature Names"
 
     # Prepare Data for Transformation
     print "[BEGIN] Processing Data"
-    processed_data, feature_names, tweets = processJsonData(data)  
-    npmatrix = np.array(processed_data.toarray())
+    processed_data_TDM, feature_names_newtweet, tweets = processJsonData(data)  
+    npmatrix = np.array(processed_data_TDM.toarray())
     print "[END] Processing Data"
 
     # Transform Data against Model
-    doc_topic_test = model.transform(npmatrix)
+    # Returns:
+        # doc_topic : array-like, shape (n_samples, n_topics)
+        # Point estimate of the document-topic distributions
+        
+    # Below:
+    # gives us an array of possible topics, 
+    # take argmax to get the topic that matches the doc
+    doc_topic = model.doc_topic_
+    # do we actually want the below at all??????? No...
+    # doc_topic_test = model.transform(npmatrix)
 
     n_top_words = 8
+    # for topic in topic_words:
+    #     # print topic
+    #     # print type(topic)
+    #     print np.array(feature_names_model)[np.argsort(topic)][:-n_top_words:-1]
 
-    print doc_topic_test
-    print topic_words[1]
-    print type(topic_words)
-    for topic in topic_words:
-        # print topic
-        print type(topic)
-
-        # print np.array(feature_names)[np.argsort(topic)][:-n_top_words:-1]
-
-
-    for title, topic_number in zip(tweets, doc_topic_test):
-        print type(doc_topic_test)
-        print("(TOPIC {}:: {} ::) {} ".format(topic_number.argmax(), topic_words[topic_number.argmax()], title) )
+    for title, topic_dist in zip(tweets, doc_topic):
+        topic_words = np.array(feature_names_model)[np.argsort(topic_dist)][:-n_top_words:-1]
+        print("(TOPIC {} ::) {} ".format(' '.join(topic_dict[topic_dist.argmax()]), title) )
 
 #standard boilerplate that calls the main() function
 if __name__ == '__main__':
