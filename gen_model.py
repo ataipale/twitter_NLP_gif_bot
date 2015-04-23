@@ -24,6 +24,7 @@ filter_prefix_set = ('@', 'http', 'rt', 'www')
 def processJsonData(JSON_array):
 
     tword_array = []
+    # xxx wait.... why are we making tweets?
     tweets = []
     # parse each tweet to retrieve status and seperate each word
     for item in JSON_array:
@@ -41,7 +42,6 @@ def processJsonData(JSON_array):
                 except langdetect.lang_detect_exception.LangDetectException:
                     continue
                 if  lang == 'en':
-                    # print "entered loop!"
                     tokenized = twokenizer.tokenize(tweet_split)
                     # get rid of stopwords
                     # no_stopwords_tweet = [word for word in tokenized if word not in common_words_set]
@@ -49,28 +49,29 @@ def processJsonData(JSON_array):
                     just_real_words = [re.sub(r'[^\w\s]','', word) for word 
                                                 in tokenized 
                                                 if not word.startswith(filter_prefix_set)
-                                                
                                             ]
                     if just_real_words:
                         tword_array.append(" ".join(just_real_words))
                         tweets.append(tweet_split)
 
+    # use Sklearn's kit to fit and transform the array of just real words from the 
+    # tweets and make TDM
     count_vectorizer = CountVectorizer(min_df = 2, stop_words = 'english')
-    matrix = count_vectorizer.fit_transform(tword_array)
-    print matrix[:10]
+    TDM = count_vectorizer.fit_transform(tword_array)
+    print TDM[:10]
 
     feature_names = np.array(count_vectorizer.get_feature_names())
     print feature_names
     # print matrix.shape
 
-    return (matrix, feature_names, tweets)
+    return (TDM, feature_names, tweets)
 
 def log(str):
     print "\n@@@@@@@@@@@\n"
     print 
     print "\n@@@@@@@@@@@\n"
 
-# note: best to interact with user in main function then pass these variable to f(n)
+
 def main():
 
     print "file start"
@@ -81,43 +82,39 @@ def main():
         for line in data_file:
             data.append(json.loads(line))
 
+    # for cutting off beginning portion of data for testing purposes
     testing_size = 20
+
+    # to avoid looking at the entire data set when testing
+    test_max = 1000
 
     print "before data"
 
-    processed_data, feature_names, tword_array = processJsonData(data[testing_size:1000])  
+    processed_data_TDM, feature_names, tweets = processJsonData(data[testing_size:test_max])  
 
-    npmatrix = np.array(processed_data.toarray())
-
-    # print type(npmatrix)
+    npmatrix = np.array(processed_data_TDM.toarray())
 
     model = lda.LDA(n_topics=40, n_iter=50, random_state=1)
-    model.fit(npmatrix[testing_size:])
+    model.fit(npmatrix)
 
-    topic_word = model.components_  # model.components_ also works
+    # topic_word is a matrix of point estimate of word distribution per topic. 
+    # Shape = [n_topics, n_features]
+    topic_word = model.components_  
     n_top_words = 8
-    topic_words_array = {}
-    for i, topic_dist in enumerate(topic_word):
-        topic_words = np.array(feature_names)[np.argsort(topic_dist)][:-n_top_words:-1]
-        topic_list = []
-        for topic in topic_words:
-            topic_list.append(topic)
-        topic_words_array[i] = topic_list
+    # topic_words_array = []
+    for i, word_dist in enumerate(topic_word):
+        print "Here are feature_names:"
+        # print type([np.argsort(word_dist)])
+        # print np.array(feature_names)
+        # Below: For each feature, sort the word distribution and give me 
+        # the 8 last words (largest word dist??)
+        topic_words = np.array(feature_names)[np.argsort(word_dist)][:-n_top_words:-1]
+        # topic_words_array[i] = topic_list
         print('Topic {}: {}'.format(i, ' '.join(topic_words)))
-
-    pickle.dump( topic_words_array , open("awesome.topic_words_array", "w"))
-
-    log(topic_words_array)
 
     pickle.dump( model , open( "awesome.model", "wb" ) )
 
     log(model.components_)
-
-    pickle.dump( model.components_ , open( "awesome.components_", "wb" ) )
-
-    log(model.alpha)
-
-    pickle.dump( model.alpha , open( "awesome.alpha", "wb" ) )
 
 #standard boilerplate that calls the main() function
 if __name__ == '__main__':
