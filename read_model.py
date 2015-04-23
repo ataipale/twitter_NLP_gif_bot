@@ -20,39 +20,31 @@ import pickle
 
 filter_prefix_set = ('@', 'http', 'rt', 'www')
 
-def processJsonData(JSON_array):
-
-    tword_array = []
-    tweets = []
-    # parse each tweet to retrieve status and seperate each word
-    for item in JSON_array:
-        # take only status for JSON file
-        status = item.get("text")
-        if status:
-            # ignore non-ascii characters, make all lowercase letters
-            tweet_split = status.encode('ascii', 'ignore').lower()
-            # get rid of useless characters in tweets, and makes words from string
-            if tweet_split:
-                # ignore non-English tweets
-                # print tweet_split
-                try:
-                    lang = langdetect.detect(tweet_split)
-                except langdetect.lang_detect_exception.LangDetectException:
-                    continue
-                if  lang == 'en':
-                    # print "entered loop!"
-                    tokenized = twokenizer.tokenize(tweet_split)
-                    # get rid of stopwords
-                    # no_stopwords_tweet = [word for word in tokenized if word not in common_words_set]
-                    # get rid of punctuation and internet terms
-                    just_real_words = [re.sub(r'[^\w\s]','', word) for word 
-                                                in tokenized 
-                                                if not word.startswith(filter_prefix_set)
-                                                
-                                            ]
-                    if just_real_words:
-                        tword_array.append(" ".join(just_real_words))
-                        tweets.append(tweet_split)
+def processTweets(tweets):
+    for status in tweets:
+        tweet_split = status.encode('ascii', 'ignore').lower()
+        # get rid of useless characters in tweets, and makes words from string
+        if tweet_split:
+            # ignore non-English tweets
+            # print tweet_split
+            try:
+                lang = langdetect.detect(tweet_split)
+            except langdetect.lang_detect_exception.LangDetectException:
+                continue
+            if  lang == 'en':
+                # print "entered loop!"
+                tokenized = twokenizer.tokenize(tweet_split)
+                # get rid of stopwords
+                # no_stopwords_tweet = [word for word in tokenized if word not in common_words_set]
+                # get rid of punctuation and internet terms
+                just_real_words = [re.sub(r'[^\w\s]','', word) for word 
+                                            in tokenized 
+                                            if not word.startswith(filter_prefix_set)
+                                            
+                                        ]
+                if just_real_words:
+                    tword_array.append(" ".join(just_real_words))
+                    tweets.append(tweet_split)
 
     count_vectorizer = CountVectorizer(min_df = 2, stop_words = 'english')
     matrix = count_vectorizer.fit_transform(tword_array)
@@ -63,6 +55,36 @@ def processJsonData(JSON_array):
     # print matrix.shape
 
     return (matrix, feature_names, tweets)
+
+def processJsonData(JSON_array):
+
+    tword_array = []
+    tweets = []
+    # parse each tweet to retrieve status and seperate each word
+    for item in JSON_array:
+        # take only status for JSON file
+        status = item.get("text")
+        if status:
+            tweets.append(status)
+
+    return processTweets(tweets)        
+
+def transform_tweet(tweet):
+    return transform_tweets([tweet])
+
+def transform_tweets(tweets):
+    # Read Model from File
+    model = pickle.load( open( "awesome.model", "rb" ) )
+
+    # Prepare Data for Transformation
+    processed_data, feature_names, tword_array = processTweets(tweets)  
+    npmatrix = np.array(processed_data.toarray())
+
+    # Transform Data against Model
+    doc_topic_test = model.transform(npmatrix)
+
+    for title, topics in zip(tword_array, doc_topic_test):
+        print("{} (top topic: {})".format(title, topics.argmax()))
 
 # note: best to interact with user in main function then pass these variable to f(n)
 def main():

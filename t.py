@@ -5,13 +5,16 @@ import tweepy, time, sys, os
 import logging
 import urllib2
 
+import read_model
+
 argfile = str(sys.argv[1])
 since_id = None if len(sys.argv) < 3 else str(sys.argv[2])
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-sleep_time = 5
+# Rate Limit for status/mentions_timeline is 15 req / 15 min
+sleep_time = 90
 mentions_count = 200
 
 GIPHY_API_KEY = 'dc6zaTOxFJmzC'
@@ -62,20 +65,22 @@ def onMentions(since_id):
     logger.info('Mention Count: %i', len(mentions))
 
     for mention in reversed(mentions):
-    #     # respond to mention
+        # respond to mention
 
-    #     user = mention.user.screen_name
-    #     text = mention.text # there's no @
+        user = mention.user.screen_name
+        
+
+        
+        text = mention.text
     #     topic = model.transform(text)
     #     img_url = giphyApi(topic.text, GIPHY_API_KEY)
     #
     #     msg = '@' + user + ' ' + img_url
-    #     
-    #     print 
+
         since_id = mention.id
         logger.info(logstr('mention', since_id))
-    #     api.update_status(line)
-    #     time.sleep(5)
+
+    #     api.update_status(msg)
 
     return since_id
 
