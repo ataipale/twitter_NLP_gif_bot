@@ -116,8 +116,14 @@ def transform_tweets(model, tweets):
     return (doc_topic, real_tweets) 
 
 def printTransformedTweets(tweets, doc_topic, topic_dict):
+    topics_from_tweet = []
     for title, topic_dist in zip(tweets, doc_topic):
-        print("(TOPIC {} ::) {} ".format(' '.join(topic_dict[topic_dist.argmax()]), title))
+        topics = topic_dict[topic_dist.argmax()]
+        print("(TOPIC {} ::) {} ".format(' '.join(topics), title))
+        for topic in topics:
+            topics_from_tweet.append(topic)
+    return topics_from_tweet
+
 
 def saveModel(model, feature_names, topic_dict, filename):
     pickle_dict = dict(model = model, feature_names = feature_names, topic_dict = topic_dict)
