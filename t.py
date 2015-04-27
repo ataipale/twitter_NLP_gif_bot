@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
  
-import tweepy, time, sys, os
-import logging
+import tweepy
 import urllib2
+import argparse, logging, time, sys, os, json
 
+import awesome_lda
 import read_model
-
-argfile = str(sys.argv[1])
-since_id = None if len(sys.argv) < 3 else str(sys.argv[2])
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -49,13 +47,35 @@ auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
 auth.set_access_token(ACCESS_KEY, ACCESS_SECRET)
 api = tweepy.API(auth)
 
-def logstr(ltype, data):
-  return '[' + str(ltype) + ';;;' + str(data) + ']'
+def getGifUrl(q):
+  gif_results = json.loads(giphyApi(q, GIPHY_API_KEY))
+  logger.info("Gif Results Length: {}".format(len(gif_results["data"])))
+  try:
+    return gif_results["data"][0]["images"]["fixed_height"]["url"]
+  except:
+    return "http://media.giphy.com/media/cwTtbmUwzPqx2/giphy.gif"
+
+def saveGifFromUrl(gif_url, filename):
+  r = urllib2.urlopen(gif_url)
+  f = open(filename, 'w+')
+  f.write(r.read())
+  f.close()
+
+def gifFlow(q, user, status_id):
+  filename = "gif/temp.gif"
+  gif_url = getGifUrl(q)
+  saveGifFromUrl(gif_url, filename)
+  postGif(api, filename, user, status_id)
+  os.remove(filename)
 
 def giphyApi(q, api_key):
   # http://api.giphy.com/v1/gifs/search?q=funny+cat&api_key=dc6zaTOxFJmzC   
-  resp = urllib2.urlopen('http://api.giphy.com/v1/gifs/search?q' + q + '&api_key=' + GIPHY_API_KEY).read()
-  print resp
+  resp = urllib2.urlopen('http://api.giphy.com/v1/gifs/search?q=' + q + '&api_key=' + GIPHY_API_KEY).read()
+  return resp
+
+def postGif(api, filename, user, status_id):
+  status = "A gif for you dear @" + user
+  return api.update_with_media(filename=filename, status=status, in_reply_to_status_id=status_id)
 
 def onMentions(since_id):
 
@@ -71,25 +91,34 @@ def onMentions(since_id):
     logger.info('Mention Count: %i', len(mentions))
 
     for mention in reversed(mentions):
-        # respond to mention
-
         user = mention.user.screen_name
-        
         text = mention.text
-        topic = read_model.transform_tweet(text)
-        img_url = giphyApi(topic, GIPHY_API_KEY)
-
-    #
-    #     msg = '@' + user + ' ' + img_url
-
         since_id = mention.id
-        logger.info(logstr('mention', since_id))
+        
+        # handwavey
+        topic_query_arr = read_model.tweet_to_topic(text, 3)
+        topic_query_str = "-".join(topic_query_arr)
+        # topic = "gorilla"
 
-    #     api.update_status(msg)
+        gifFlow(topic_query_str, user, since_id)
 
     return since_id
 
+def postGifExample():
+  q = "dolphin"
+  user = "djdrozdov"
+  status_id = "588398082116739072"
+  gifFlow(q, user, status_id)
+
 if __name__ == "__main__":
-    while(1):
-        since_id = onMentions(since_id)
-        time.sleep(sleep_time)
+
+  parser = argparse.ArgumentParser()
+  parser.add_argument('since_id', nargs='?')
+  args = parser.parse_args()
+
+  since_id = args.since_id
+
+  while(1):
+    since_id = onMentions(since_id)
+    time.sleep(sleep_time)
+
