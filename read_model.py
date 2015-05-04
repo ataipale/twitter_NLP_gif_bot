@@ -5,7 +5,7 @@ import random
 
 model_file = "awesome.object" 
 
-def tweet_to_topic(in_tweet, number_of_topics):
+def tweet_to_topic(in_tweet, number_of_topics = 3):
     # Read Model from File
     model, _, topic_dict = awesome_lda.loadModel(model_file)
     in_tweet = [in_tweet]
