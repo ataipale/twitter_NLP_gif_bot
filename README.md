@@ -1,6 +1,6 @@
 # Twitter Gif Bot
 
-This project creates a Twitter bot that responds to a bot-directed tweet with a gif that expressed the text of the tweet.
+This project creates a Twitter bot that uses machine learning algorithms to turn your tweets into Gifs!
 
 ##How it works
 
